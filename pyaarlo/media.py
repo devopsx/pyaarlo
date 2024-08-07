@@ -66,33 +66,37 @@ class ArloMediaDownloader(threading.Thread):
 
     def _download(self, media):
         """Download a single piece of media.
+           Retries 3 times.
 
         :param media: ArloMediaObject to download
         :return: 1 if a file was downloaded, 0 if the file present and skipped or -1 if an error occured
         """
         # Calculate name.
         save_file = self._output_name(media)
-        if save_file is None:
-            return -1
-        try:
-            # See if it exists.
-            os.makedirs(os.path.dirname(save_file), exist_ok=True)
-            if not os.path.exists(save_file):
-                # Download to temporary file before renaming it.
-                self.debug(f"dowloading for {media.camera.name} --> {save_file}")
-                save_file_tmp = f"{save_file}.tmp"
-                media.download_video(save_file_tmp)
-                os.rename(save_file_tmp, save_file)
-                return 1
-            else:
-                self.vdebug(
-                    f"skipping dowload for {media.camera.name} --> {save_file}"
-                )
-                return 0
-        except OSError as _e:
-            self._arlo.error(f"failed to download: {save_file}")
-            self._arlo.error(f"error: {e}")
-            return -1
+        for retry in [1, 2, 3]:
+            if save_file is None:
+                return -1
+            try:
+                # See if it exists.
+                os.makedirs(os.path.dirname(save_file), exist_ok=True)
+                if not os.path.exists(save_file):
+                    # Download to temporary file before renaming it.
+                    self.debug(f"dowloading for {media.camera.name} --> {save_file}")
+                    save_file_tmp = f"{save_file}.tmp"
+                    media.download_video(save_file_tmp)
+                    os.rename(save_file_tmp, save_file)
+                    return 1
+                else:
+                    self.vdebug(
+                        f"skipping dowload for {media.camera.name} --> {save_file}"
+                    )
+                    return 0
+            except OSError as _e:
+                self._arlo.error(f"failed to download: {save_file}")
+                self._arlo.error(f"error: {e}")
+                if retry == 3:
+                    self._arlo.error(f"max retries reached for {save_file}")
+                    return -1
 
     def run(self):
         if self._save_format == "":
