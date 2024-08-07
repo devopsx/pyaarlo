@@ -91,6 +91,7 @@ class ArloMediaDownloader(threading.Thread):
                 return 0
         except OSError as _e:
             self._arlo.error(f"failed to download: {save_file}")
+            self._arlo.error(f"error: {e}")
             return -1
 
     def run(self):
