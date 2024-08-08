@@ -73,7 +73,8 @@ class ArloMediaDownloader(threading.Thread):
         """
         # Calculate name.
         save_file = self._output_name(media)
-        for retry in [1, 2, 3]:
+        max_retries = 3
+        for retry in range(max_retries + 1):
             if save_file is None:
                 return -1
             try:
@@ -94,7 +95,7 @@ class ArloMediaDownloader(threading.Thread):
             except OSError as _e:
                 self._arlo.error(f"failed to download: {save_file}")
                 self._arlo.error(f"error: {_e}")
-                if retry == 3:
+                if retry >= max_retries:
                     self._arlo.error(f"max retries reached for {save_file}")
                     return -1
 
